@@ -30,6 +30,7 @@ export interface DiaryContent {
         tags?: string[];
         mood?: number;
     };
+    path: string;
 }
 
 export interface AnalysisResult {

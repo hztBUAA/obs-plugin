@@ -169,25 +169,36 @@ class TimelineGenerator {
 
 ### ChartService
 ```typescript
+interface ChartData {
+    type: 'mood' | 'activity' | 'wordcloud' | 'timeline';
+    data: any;
+    options?: {
+        width?: number;
+        height?: number;
+        padding?: number;
+        rotate?: () => number;
+        font?: string;
+        fontSize?: (d: any) => number;
+        responsive?: boolean;
+        scales?: any;
+    };
+}
+
 interface ChartService {
     // 生成心情趋势图
-    generateMoodTrendChart(entries: TimelineEntry[]): Chart;
+    generateMoodTrendChart(entries: TimelineEntry[]): ChartData;
     
     // 生成词云图数据
-    generateWordCloudData(entries: TimelineEntry[]): Array<{
-        text: string;
-        value: number;
-        color: string;
-    }>;
+    generateWordCloudChart(entries: TimelineEntry[]): ChartData;
     
     // 生成活动统计图
-    generateActivityChart(entries: TimelineEntry[]): Chart;
+    generateActivityChart(entries: TimelineEntry[]): ChartData;
     
     // 生成心情分布图
-    generateMoodDistributionChart(entries: TimelineEntry[]): Chart;
+    generateMoodDistributionChart(entries: TimelineEntry[]): ChartData;
     
-    // 导出图表为图片
-    exportChart(chart: Chart): Promise<string>;
+    // 生成月度统计图
+    generateMonthlyStatsChart(entries: TimelineEntry[]): ChartData;
 }
 ```
 
@@ -212,6 +223,10 @@ interface ChartService {
    - Obsidian API 版本
    - 不同操作系统
    - 移动端支持 
+
+5. 目前还没有支持日记的模版文字的剔除
+   - 需要支持读入模板文件 可在设置中选择
+   - 需要纳入模板文字 防止模板文字的干扰（关键词提取（parser）上、 分析（analysis）等等） 
 
 
 ## 目前的工作流程

@@ -1,4 +1,4 @@
-import { Chart, ChartConfiguration } from 'chart.js/auto';
+import { Chart } from 'chart.js/auto';
 import * as d3 from 'd3';
 import { ChartData, TimelineEntry } from '../types';
 
@@ -6,11 +6,11 @@ export class ChartService {
     /**
      * 生成心情趋势图
      */
-    generateMoodTrendChart(entries: TimelineEntry[]): Chart {
+    generateMoodTrendChart(entries: TimelineEntry[]): ChartData {
         const sortedEntries = [...entries].sort((a, b) => a.date.getTime() - b.date.getTime());
         
-        const config: ChartConfiguration = {
-            type: 'line',
+        return {
+            type: 'mood',
             data: {
                 labels: sortedEntries.map(entry => 
                     entry.date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
@@ -35,44 +35,11 @@ export class ChartService {
                 }
             }
         };
-
-        const canvas = document.createElement('canvas');
-        return new Chart(canvas, config);
     }
-
-    /**
-     * 生成关键词词云图数据
-     */
-    generateWordCloudChart(entries: TimelineEntry[]): ChartData {
-        const wordFreq = new Map<string, number>();
-        entries.forEach(entry => {
-            entry.keywords.forEach(keyword => {
-                wordFreq.set(keyword, (wordFreq.get(keyword) || 0) + 1);
-            });
-        });
-
-        const words = Array.from(wordFreq.entries()).map(([text, value]) => ({
-            text,
-            value,
-            color: this.getRandomColor()
-        }));
-
-        return {
-            type: 'wordcloud',
-            data: words,
-            options: {
-                width: 800,
-                height: 400,
-                padding: 5,
-                rotate: () => (~~(Math.random() * 6) - 3) * 30
-            }
-        };
-    }
-
     /**
      * 生成活动统计图
      */
-    generateActivityChart(entries: TimelineEntry[]): Chart {
+    generateActivityChart(entries: TimelineEntry[]): ChartData {
         const activityCount = new Map<string, number>();
         entries.forEach(entry => {
             entry.activities.forEach(activity => {
@@ -84,8 +51,8 @@ export class ChartService {
             .sort((a, b) => b[1] - a[1])
             .slice(0, 10);
 
-        const config: ChartConfiguration = {
-            type: 'bar',
+        return {
+            type: 'activity',
             data: {
                 labels: sortedActivities.map(([activity]) => activity),
                 datasets: [{
@@ -106,15 +73,12 @@ export class ChartService {
                 }
             }
         };
-
-        const canvas = document.createElement('canvas');
-        return new Chart(canvas, config);
     }
 
     /**
      * 生成心情分布图
      */
-    generateMoodDistributionChart(entries: TimelineEntry[]): Chart {
+    generateMoodDistributionChart(entries: TimelineEntry[]): ChartData {
         const distribution = [0, 0, 0, 0, 0]; // 对应1-5分
         entries.forEach(entry => {
             const index = Math.floor(entry.moodScore) - 1;
@@ -125,8 +89,8 @@ export class ChartService {
 
         const emojis = ['😢', '😔', '😐', '😊', '😄'];
 
-        const config: ChartConfiguration = {
-            type: 'doughnut',
+        return {
+            type: 'mood',
             data: {
                 labels: emojis,
                 datasets: [{
@@ -145,9 +109,6 @@ export class ChartService {
                 responsive: true
             }
         };
-
-        const canvas = document.createElement('canvas');
-        return new Chart(canvas, config);
     }
 
     /**
@@ -217,7 +178,7 @@ export class ChartService {
     /**
      * 生成词云图数据
      */
-    generateWordCloudData(entries: TimelineEntry[]): Array<{text: string; value: number; color: string}> {
+    generateWordCloudChart(entries: TimelineEntry[]): ChartData {
         const wordFreq = new Map<string, number>();
         entries.forEach(entry => {
             entry.keywords.forEach(keyword => {
@@ -225,7 +186,7 @@ export class ChartService {
             });
         });
 
-        return Array.from(wordFreq.entries())
+        const words = Array.from(wordFreq.entries())
             .sort((a, b) => b[1] - a[1])
             .slice(0, 50)  // 限制最多50个关键词
             .map(([text, value]) => ({
@@ -233,6 +194,19 @@ export class ChartService {
                 value,
                 color: this.getRandomColor()
             }));
+
+        return {
+            type: 'wordcloud',
+            data: words,
+            options: {
+                width: 800,
+                height: 400,
+                padding: 5,
+                rotate: () => (~~(Math.random() * 6) - 3) * 30,
+                font: "Impact",
+                fontSize: (d: {value: number}) => Math.sqrt(d.value) * 10
+            }
+        };
     }
 
     /**

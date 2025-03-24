@@ -9,7 +9,7 @@ import { OllamaService } from './services/ai/ollama';
 import { OpenAIService } from './services/ai/openai';
 import { ChartService } from './services/chart';
 import { DiarySettingTab } from './settings';
-import { DEFAULT_SETTINGS, DiaryPluginSettings } from './types';
+import { AnalysisResult, ChartData, DEFAULT_SETTINGS, DiaryContent, DiaryPluginSettings, TimelineEntry } from './types';
 
 export default class DiaryAnalyzerPlugin extends Plugin {
 	settings: DiaryPluginSettings;
@@ -117,7 +117,7 @@ export default class DiaryAnalyzerPlugin extends Plugin {
 			// 生成统计图表
 			const charts = {
 				moodTrend: this.chartService.generateMoodTrendChart([timelineEntry]),
-				wordCloud: this.chartService.generateWordCloudData([timelineEntry]),
+				wordCloud: this.chartService.generateWordCloudChart([timelineEntry]),
 				activityStats: this.chartService.generateActivityChart([timelineEntry]),
 				moodDistribution: this.chartService.generateMoodDistributionChart([timelineEntry])
 			};
@@ -336,9 +336,14 @@ class DateRangeModal extends Modal {
 class SingleDiaryAnalysisModal extends Modal {
 	constructor(
 		app: App,
-		private content: any,
-		private analysis: any,
-		private charts: any
+		private content: DiaryContent,
+		private analysis: AnalysisResult,
+		private charts: {
+			moodTrend: ChartData;
+			wordCloud: ChartData;
+			activityStats: ChartData;
+			moodDistribution: ChartData;
+		}
 	) {
 		super(app);
 	}
@@ -425,9 +430,9 @@ class SingleDiaryAnalysisModal extends Modal {
 		});
 	}
 
-	private renderWordCloud(canvas: HTMLCanvasElement, words: Array<{text: string; value: number; color: string}>) {
-		const width = canvas.parentElement?.clientWidth || 800;
-		const height = canvas.parentElement?.clientHeight || 400;
+	private renderWordCloud(canvas: HTMLCanvasElement, chartData: ChartData) {
+		const width = canvas.parentElement?.clientWidth || chartData.options.width;
+		const height = canvas.parentElement?.clientHeight || chartData.options.height;
 
 		interface CloudWord {
 			text: string;
@@ -440,15 +445,15 @@ class SingleDiaryAnalysisModal extends Modal {
 
 		const layout = cloud<CloudWord>()
 			.size([width, height])
-			.words(words.map(d => ({
+			.words(chartData.data.map(d => ({
 				text: d.text,
-				size: Math.sqrt(d.value) * 10,
+				size: chartData.options.fontSize(d),
 				color: d.color
 			})))
-			.padding(5)
-			.rotate(() => (~~(Math.random() * 6) - 3) * 30)
-			.font("Impact")
-			.fontSize(d => d.size || 0)
+			.padding(chartData.options.padding)
+			.rotate(chartData.options.rotate)
+			.font(chartData.options.font)
+			.fontSize(d => d.size)
 			.on("end", draw);
 
 		layout.start();
@@ -465,7 +470,7 @@ class SingleDiaryAnalysisModal extends Modal {
 				.enter()
 				.append("text")
 				.style("font-size", d => `${d.size}px`)
-				.style("font-family", "Impact")
+				.style("font-family", chartData.options.font)
 				.style("fill", d => d.color)
 				.attr("text-anchor", "middle")
 				.attr("transform", d => `translate(${d.x || 0},${d.y || 0})rotate(${d.rotate || 0})`)
@@ -501,7 +506,6 @@ class SingleDiaryAnalysisModal extends Modal {
 			}
 
 			// 保存报告
-			const fileName = this.content.date.toISOString().split('T')[0];
 			const reportPath = `${this.content.path.replace(/\.md$/, '')}_分析报告.md`;
 			await this.app.vault.create(reportPath, report);
 			new Notice('分析报告已导出');
@@ -519,8 +523,13 @@ class SingleDiaryAnalysisModal extends Modal {
 class AnalysisReportModal extends Modal {
 	constructor(
 		app: App,
-		private timelineEntries: any[],
-		private charts: any
+		private timelineEntries: TimelineEntry[],
+		private charts: {
+			moodTrend: ChartData;
+			wordCloud: ChartData;
+			activityStats: ChartData;
+			moodDistribution: ChartData;
+		}
 	) {
 		super(app);
 	}
@@ -566,7 +575,7 @@ class AnalysisReportModal extends Modal {
 
 		// 渲染词云图
 		const wordCloudCanvas = wordCloudContainer.createEl('canvas');
-		this.renderWordCloud(wordCloudCanvas, this.charts.wordCloud.data);
+		this.renderWordCloud(wordCloudCanvas, this.charts.wordCloud);
 
 		// 渲染活动统计图
 		const activityStatsCanvas = activityStatsContainer.createEl('canvas');
@@ -585,9 +594,9 @@ class AnalysisReportModal extends Modal {
 		});
 	}
 
-	private renderWordCloud(canvas: HTMLCanvasElement, words: Array<{text: string; value: number; color: string}>) {
-		const width = canvas.parentElement?.clientWidth || 800;
-		const height = canvas.parentElement?.clientHeight || 400;
+	private renderWordCloud(canvas: HTMLCanvasElement, chartData: ChartData) {
+		const width = canvas.parentElement?.clientWidth || chartData.options.width;
+		const height = canvas.parentElement?.clientHeight || chartData.options.height;
 
 		interface CloudWord {
 			text: string;
@@ -600,15 +609,15 @@ class AnalysisReportModal extends Modal {
 
 		const layout = cloud<CloudWord>()
 			.size([width, height])
-			.words(words.map(d => ({
+			.words(chartData.data.map(d => ({
 				text: d.text,
-				size: Math.sqrt(d.value) * 10,
+				size: chartData.options.fontSize(d),
 				color: d.color
 			})))
-			.padding(5)
-			.rotate(() => (~~(Math.random() * 6) - 3) * 30)
-			.font("Impact")
-			.fontSize(d => d.size || 0)
+			.padding(chartData.options.padding)
+			.rotate(chartData.options.rotate)
+			.font(chartData.options.font)
+			.fontSize(d => d.size)
 			.on("end", draw);
 
 		layout.start();
@@ -625,7 +634,7 @@ class AnalysisReportModal extends Modal {
 				.enter()
 				.append("text")
 				.style("font-size", d => `${d.size}px`)
-				.style("font-family", "Impact")
+				.style("font-family", chartData.options.font)
 				.style("fill", d => d.color)
 				.attr("text-anchor", "middle")
 				.attr("transform", d => `translate(${d.x || 0},${d.y || 0})rotate(${d.rotate || 0})`)
