@@ -1,94 +1,114 @@
-# Obsidian Sample Plugin
+# Obsidian 日记分析器
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+这是一个强大的 Obsidian 插件，可以帮助你分析和可视化你的日记内容。通过智能分析，它可以生成时间线、提取关键词、分析情感倾向，并生成丰富的统计报告。
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## 功能特点
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+- 📊 自动分析日记内容
+  - 提取关键词（最多5个）
+  - 分析心情指数（5级评分）
+  - 识别主要活动
+  - 生成智能摘要
 
-## First time developing plugins?
+- 📅 时间线生成
+  - 可视化你的日记时间线
+  - 按时间范围筛选
+  - 支持关键词搜索
+  - 情感趋势追踪
 
-Quick starting guide for new plugin devs:
+- 🤖 AI 支持
+  - OpenAI 集成（可选）
+  - Ollama 本地模型支持（可选）
+  - 智能摘要生成
+  - 更准确的情感分析
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+- 📈 数据可视化
+  - 心情趋势图
+  - 关键词词云
+  - 活动统计
+  - 月度分析
 
-## Releasing new releases
+## 安装
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+1. 在 Obsidian 中打开设置
+2. 进入"第三方插件"
+3. 关闭"安全模式"
+4. 点击"浏览"并搜索"日记分析器"
+5. 点击"安装"
+6. 启用插件
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+## 使用方法
 
-## Adding your plugin to the community plugin list
+### 基本使用
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+1. 在左侧工具栏中点击日记分析器图标
+2. 选择要分析的日记文件夹
+3. 设置分析参数（可选）
+4. 点击"开始分析"
 
-## How to use
+### 快捷命令
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+- `Ctrl/Cmd + P` 打开命令面板，输入以下命令：
+  - "分析当前日记"：分析当前打开的日记
+  - "分析指定时间范围"：选择时间范围进行分析
+  - "生成时间线"：生成日记时间线
+  - "导出分析报告"：导出完整的分析报告
 
-## Manually installing the plugin
+### AI 功能配置
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+1. 进入插件设置
+2. 选择 AI 服务：
+   - OpenAI：需要配置 API 密钥
+   - Ollama：需要本地安装 Ollama
 
-## Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint .\src\`
+## 配置选项
 
-## Funding URL
+### 基础设置
+- 日记文件夹路径
+- 日期格式
+- 分析日期范围
 
-You can include funding URLs where people who use your plugin can financially support it.
+### AI 设置
+- OpenAI API 配置
+- Ollama 模型选择
+- AI 功能开关
 
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
+### 分析设置
+- 关键词数量
+- 心情指数范围
+- 自定义标签
 
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
-```
+### 导出设置
+- 导出格式（PDF/PNG/SVG）
+- 图表选项
 
-If you have multiple URLs, you can also do:
+## 注意事项
 
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
-```
+1. 首次使用时请确保正确设置日记文件夹路径
+2. 使用 AI 功能需要网络连接（OpenAI）或本地模型（Ollama）
+3. 大量日记分析可能需要一些时间
+4. 建议定期备份你的数据
 
-## API Documentation
+## 常见问题
 
-See https://github.com/obsidianmd/obsidian-api
+Q: 如何更改日记文件夹路径？  
+A: 在插件设置中修改"日记文件夹"选项。
+
+Q: 支持哪些日期格式？  
+A: 默认支持 YYYY-MM-DD 格式，可在设置中自定义。
+
+Q: 如何使用本地 AI 模型？  
+A: 需要先安装 Ollama，然后在插件设置中启用并选择模型。
+
+## 技术支持
+
+- GitHub Issues: [提交问题](https://github.com/hztBUAA/https://github.com/hztBUAA/obs-plugin/issues)
+- 邮件支持: zhentinghng@buaa.edu.cn
+
+## 贡献
+
+欢迎提交 Pull Requests 或提出建议！
+
+## 许可证
+
+MIT License

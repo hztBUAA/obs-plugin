@@ -1,11 +1,10 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
+	"id": "obsidian-diary-analyzer",
+	"name": "日记分析器",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"description": "一个强大的日记分析工具，支持关键词提取、情感分析、时间线生成等功能",
+	"author": "hzt",
+	"authorUrl": "https://github.com/hztBUAA",
 	"isDesktopOnly": false
 }

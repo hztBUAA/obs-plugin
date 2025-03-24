@@ -11,14 +11,22 @@
     "importHelpers": true,
     "isolatedModules": true,
     "strictNullChecks": true,
+    "esModuleInterop": true,
     "lib": [
       "DOM",
       "ES5",
       "ES6",
-      "ES7"
+      "ES7",
+      "ES2021"
+    ],
+    "types": [
+      "node"
     ]
   },
   "include": [
     "**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
   ]
 }
