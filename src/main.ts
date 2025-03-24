@@ -223,6 +223,40 @@ export default class DiaryAnalyzerPlugin extends Plugin {
 		}
 	}
 
+	/**
+	 * 分析所有日记
+	 */
+	async analyzeDiaries() {
+		try {
+			const files = await this.parser.scanDiaryFiles();
+			if (files.length === 0) {
+				new Notice('未找到日记文件');
+				return;
+			}
+
+			const diaryContents = await this.parser.parseMultipleDiaries(files);
+			const analyses = await Promise.all(
+				diaryContents.map(diary => this.analyzer.analyze(diary))
+			);
+
+			// 生成时间线数据
+			const timelineEntries = this.timeline.generateTimelineData(diaryContents, analyses);
+
+			// 生成统计图表
+			const charts = {
+				moodTrend: this.chartService.generateMoodTrendChart(timelineEntries),
+				wordCloud: this.chartService.generateWordCloudChart(timelineEntries),
+				activityStats: this.chartService.generateActivityChart(timelineEntries),
+				moodDistribution: this.chartService.generateMoodDistributionChart(timelineEntries)
+			};
+
+			// 显示分析结果
+			new AnalysisReportModal(this.app, timelineEntries, charts).open();
+		} catch (error) {
+			new Notice('分析日记时出错：' + error.message);
+		}
+	}
+
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 	}
