@@ -111,8 +111,19 @@ export default class DiaryAnalyzerPlugin extends Plugin {
 			const content = await this.parser.parseDiaryContent(file);
 			const analysis = await this.analyzer.analyze(content);
 
+			// 生成时间线数据
+			const timelineEntry = this.timeline.generateTimelineData([content], [analysis])[0];
+
+			// 生成统计图表
+			const charts = {
+				moodTrend: this.chartService.generateMoodTrendChart([timelineEntry]),
+				wordCloud: this.chartService.generateWordCloudData([timelineEntry]),
+				activityStats: this.chartService.generateActivityChart([timelineEntry]),
+				moodDistribution: this.chartService.generateMoodDistributionChart([timelineEntry])
+			};
+
 			// 创建分析结果预览
-			new AnalysisResultModal(this.app, content, analysis).open();
+			new SingleDiaryAnalysisModal(this.app, content, analysis, charts).open();
 		} catch (error) {
 			new Notice('分析日记时出错：' + error.message);
 		}
@@ -137,7 +148,7 @@ export default class DiaryAnalyzerPlugin extends Plugin {
 			// 生成时间线数据
 			const timelineEntries = this.timeline.generateTimelineData(filteredDiaries, analyses);
 
-			// 生成统计图表
+			// 生成统计图表 TODO 需要迁移这里的service的接口 关于词云
 			const charts = {
 				moodTrend: this.chartService.generateMoodTrendChart(timelineEntries),
 				wordCloud: this.chartService.generateWordCloudChart(timelineEntries),
@@ -322,32 +333,181 @@ class DateRangeModal extends Modal {
 	}
 }
 
-class AnalysisResultModal extends Modal {
+class SingleDiaryAnalysisModal extends Modal {
 	constructor(
 		app: App,
 		private content: any,
-		private analysis: any
+		private analysis: any,
+		private charts: any
 	) {
 		super(app);
 	}
 
 	onOpen() {
 		const { contentEl } = this;
-		contentEl.createEl('h2', { text: '分析结果' });
+		contentEl.createEl('h2', { text: '日记分析结果' });
 
+		// 显示基本信息
+		const basicContainer = contentEl.createDiv();
+		basicContainer.createEl('h3', { text: '基本信息' });
+		basicContainer.createEl('p', { text: `日期：${this.content.date.toLocaleDateString('zh-CN')}` });
+		
 		// 显示分析结果
 		const resultContainer = contentEl.createDiv();
-		resultContainer.createEl('h3', { text: '摘要' });
+		resultContainer.createEl('h3', { text: '内容分析' });
+		
+		// 摘要
+		resultContainer.createEl('h4', { text: '摘要' });
 		resultContainer.createEl('p', { text: this.analysis.summary });
 
-		resultContainer.createEl('h3', { text: '关键词' });
+		// 关键词
+		resultContainer.createEl('h4', { text: '关键词' });
 		resultContainer.createEl('p', { text: this.analysis.keywords.join('、') });
 
-		resultContainer.createEl('h3', { text: '心情指数' });
+		// 心情指数
+		resultContainer.createEl('h4', { text: '心情指数' });
 		resultContainer.createEl('p', { text: `${this.analysis.moodScore}分` });
 
-		resultContainer.createEl('h3', { text: '活动' });
+		// 活动
+		resultContainer.createEl('h4', { text: '活动' });
 		resultContainer.createEl('p', { text: this.analysis.activities.join('、') });
+
+		// 显示图表
+		const chartsContainer = contentEl.createDiv();
+		chartsContainer.createEl('h3', { text: '可视化分析' });
+
+		// 创建图表容器
+		const moodTrendContainer = chartsContainer.createDiv();
+		const wordCloudContainer = chartsContainer.createDiv();
+		const activityStatsContainer = chartsContainer.createDiv();
+		const moodDistContainer = chartsContainer.createDiv();
+
+		// 设置容器样式
+		moodTrendContainer.style.height = '200px';
+		wordCloudContainer.style.height = '200px';
+		activityStatsContainer.style.height = '200px';
+		moodDistContainer.style.height = '200px';
+
+		// 渲染心情趋势图
+		const moodTrendCanvas = moodTrendContainer.createEl('canvas');
+		new Chart(moodTrendCanvas, {
+			type: 'line',
+			data: this.charts.moodTrend.data,
+			options: this.charts.moodTrend.options
+		});
+
+		// 渲染词云图
+		const wordCloudCanvas = wordCloudContainer.createEl('canvas');
+		this.renderWordCloud(wordCloudCanvas, this.charts.wordCloud);
+
+		// 渲染活动统计图
+		const activityStatsCanvas = activityStatsContainer.createEl('canvas');
+		new Chart(activityStatsCanvas, {
+			type: 'bar',
+			data: this.charts.activityStats.data,
+			options: this.charts.activityStats.options
+		});
+
+		// 渲染心情分布图
+		const moodDistCanvas = moodDistContainer.createEl('canvas');
+		new Chart(moodDistCanvas, {
+			type: 'doughnut',
+			data: this.charts.moodDistribution.data,
+			options: this.charts.moodDistribution.options
+		});
+
+		// 添加导出按钮
+		const exportButton = contentEl.createEl('button', {
+			text: '导出分析报告'
+		});
+		exportButton.addEventListener('click', async () => {
+			await this.exportSingleDiaryReport();
+		});
+	}
+
+	private renderWordCloud(canvas: HTMLCanvasElement, words: Array<{text: string; value: number; color: string}>) {
+		const width = canvas.parentElement?.clientWidth || 800;
+		const height = canvas.parentElement?.clientHeight || 400;
+
+		interface CloudWord {
+			text: string;
+			size: number;
+			color: string;
+			x?: number;
+			y?: number;
+			rotate?: number;
+		}
+
+		const layout = cloud<CloudWord>()
+			.size([width, height])
+			.words(words.map(d => ({
+				text: d.text,
+				size: Math.sqrt(d.value) * 10,
+				color: d.color
+			})))
+			.padding(5)
+			.rotate(() => (~~(Math.random() * 6) - 3) * 30)
+			.font("Impact")
+			.fontSize(d => d.size || 0)
+			.on("end", draw);
+
+		layout.start();
+
+		function draw(words: CloudWord[]) {
+			d3.select(canvas.parentElement)
+				.append("svg")
+				.attr("width", layout.size()[0])
+				.attr("height", layout.size()[1])
+				.append("g")
+				.attr("transform", `translate(${layout.size()[0] / 2},${layout.size()[1] / 2})`)
+				.selectAll("text")
+				.data(words)
+				.enter()
+				.append("text")
+				.style("font-size", d => `${d.size}px`)
+				.style("font-family", "Impact")
+				.style("fill", d => d.color)
+				.attr("text-anchor", "middle")
+				.attr("transform", d => `translate(${d.x || 0},${d.y || 0})rotate(${d.rotate || 0})`)
+				.text(d => d.text);
+		}
+	}
+
+	private async exportSingleDiaryReport() {
+		try {
+			let report = '# 日记分析报告\n\n';
+			
+			// 基本信息
+			report += `## 基本信息\n\n`;
+			report += `- 日期：${this.content.date.toLocaleDateString('zh-CN')}\n\n`;
+
+			// 内容分析
+			report += `## 内容分析\n\n`;
+			report += `### 摘要\n${this.analysis.summary}\n\n`;
+			report += `### 关键词\n${this.analysis.keywords.join('、')}\n\n`;
+			report += `### 心情指数\n${this.analysis.moodScore}分\n\n`;
+			report += `### 活动\n${this.analysis.activities.join('、')}\n\n`;
+
+			// 图表
+			report += `## 可视化分析\n\n`;
+			
+			// 导出并嵌入图表
+			for (const [name, chart] of Object.entries(this.charts)) {
+				if (chart instanceof Chart) {
+					const imageData = await chart.toBase64Image('png');
+					report += `### ${name}\n\n`;
+					report += `![${name}](${imageData})\n\n`;
+				}
+			}
+
+			// 保存报告
+			const fileName = this.content.date.toISOString().split('T')[0];
+			const reportPath = `${this.content.path.replace(/\.md$/, '')}_分析报告.md`;
+			await this.app.vault.create(reportPath, report);
+			new Notice('分析报告已导出');
+		} catch (error) {
+			new Notice('导出分析报告时出错：' + error.message);
+		}
 	}
 
 	onClose() {

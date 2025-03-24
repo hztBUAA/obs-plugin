@@ -1,16 +1,16 @@
-import { Chart } from 'chart.js/auto';
+import { Chart, ChartConfiguration } from 'chart.js/auto';
 import * as d3 from 'd3';
 import { ChartData, TimelineEntry } from '../types';
 
 export class ChartService {
     /**
-     * 生成心情趋势图数据
+     * 生成心情趋势图
      */
-    generateMoodTrendChart(entries: TimelineEntry[]): ChartData {
+    generateMoodTrendChart(entries: TimelineEntry[]): Chart {
         const sortedEntries = [...entries].sort((a, b) => a.date.getTime() - b.date.getTime());
         
-        return {
-            type: 'mood',
+        const config: ChartConfiguration = {
+            type: 'line',
             data: {
                 labels: sortedEntries.map(entry => 
                     entry.date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
@@ -35,6 +35,9 @@ export class ChartService {
                 }
             }
         };
+
+        const canvas = document.createElement('canvas');
+        return new Chart(canvas, config);
     }
 
     /**
@@ -67,9 +70,9 @@ export class ChartService {
     }
 
     /**
-     * 生成活动统计图数据
+     * 生成活动统计图
      */
-    generateActivityChart(entries: TimelineEntry[]): ChartData {
+    generateActivityChart(entries: TimelineEntry[]): Chart {
         const activityCount = new Map<string, number>();
         entries.forEach(entry => {
             entry.activities.forEach(activity => {
@@ -81,8 +84,8 @@ export class ChartService {
             .sort((a, b) => b[1] - a[1])
             .slice(0, 10);
 
-        return {
-            type: 'activity',
+        const config: ChartConfiguration = {
+            type: 'bar',
             data: {
                 labels: sortedActivities.map(([activity]) => activity),
                 datasets: [{
@@ -103,12 +106,15 @@ export class ChartService {
                 }
             }
         };
+
+        const canvas = document.createElement('canvas');
+        return new Chart(canvas, config);
     }
 
     /**
-     * 生成心情分布图数据
+     * 生成心情分布图
      */
-    generateMoodDistributionChart(entries: TimelineEntry[]): ChartData {
+    generateMoodDistributionChart(entries: TimelineEntry[]): Chart {
         const distribution = [0, 0, 0, 0, 0]; // 对应1-5分
         entries.forEach(entry => {
             const index = Math.floor(entry.moodScore) - 1;
@@ -119,8 +125,8 @@ export class ChartService {
 
         const emojis = ['😢', '😔', '😐', '😊', '😄'];
 
-        return {
-            type: 'mood',
+        const config: ChartConfiguration = {
+            type: 'doughnut',
             data: {
                 labels: emojis,
                 datasets: [{
@@ -136,17 +142,12 @@ export class ChartService {
                 }]
             },
             options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
-                }
+                responsive: true
             }
         };
+
+        const canvas = document.createElement('canvas');
+        return new Chart(canvas, config);
     }
 
     /**
@@ -214,6 +215,27 @@ export class ChartService {
     }
 
     /**
+     * 生成词云图数据
+     */
+    generateWordCloudData(entries: TimelineEntry[]): Array<{text: string; value: number; color: string}> {
+        const wordFreq = new Map<string, number>();
+        entries.forEach(entry => {
+            entry.keywords.forEach(keyword => {
+                wordFreq.set(keyword, (wordFreq.get(keyword) || 0) + 1);
+            });
+        });
+
+        return Array.from(wordFreq.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 50)  // 限制最多50个关键词
+            .map(([text, value]) => ({
+                text,
+                value,
+                color: this.getRandomColor()
+            }));
+    }
+
+    /**
      * 生成随机颜色
      */
     private getRandomColor(): string {
@@ -235,7 +257,7 @@ export class ChartService {
     /**
      * 导出图表为图片
      */
-    async exportChart(chart: Chart, format: 'png' | 'jpeg' = 'png'): Promise<string> {
-        return chart.toBase64Image(format);
+    async exportChart(chart: Chart): Promise<string> {
+        return chart.toBase64Image('png');
     }
 } 

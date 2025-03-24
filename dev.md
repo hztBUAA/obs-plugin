@@ -167,6 +167,30 @@ class TimelineGenerator {
 }
 ```
 
+### ChartService
+```typescript
+interface ChartService {
+    // 生成心情趋势图
+    generateMoodTrendChart(entries: TimelineEntry[]): Chart;
+    
+    // 生成词云图数据
+    generateWordCloudData(entries: TimelineEntry[]): Array<{
+        text: string;
+        value: number;
+        color: string;
+    }>;
+    
+    // 生成活动统计图
+    generateActivityChart(entries: TimelineEntry[]): Chart;
+    
+    // 生成心情分布图
+    generateMoodDistributionChart(entries: TimelineEntry[]): Chart;
+    
+    // 导出图表为图片
+    exportChart(chart: Chart): Promise<string>;
+}
+```
+
 ## 注意事项
 
 1. 性能优化
@@ -188,3 +212,13 @@ class TimelineGenerator {
    - Obsidian API 版本
    - 不同操作系统
    - 移动端支持 
+
+
+## 目前的工作流程
+
+### 对于单个日记
+先parser 解析得到标题、内容、元数据， 然后进行analyse，得到心情、活动、关键词以及总结摘要。
+然后利用得到的上述数据（包括content、analysis）进行时间线梳理，能够统一数据格式（TODO:对于单个，可能不需要实现）。 最后利用这里的时间线数据进行chart的生成。
+
+### 对于文件夹下的日记
+遍历所有日记文件，进行上述的处理。其中parser、analyser的数据会是数组进行汇总生成后续的时间线和图表数据。
