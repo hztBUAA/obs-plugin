@@ -1,3 +1,6 @@
+import Chart from 'chart.js/auto';
+import * as d3 from 'd3';
+import cloud from 'd3-cloud';
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, TFile } from 'obsidian';
 import { ContentAnalyzer } from './core/analyzer';
 import { DiaryParser } from './core/parser';
@@ -211,10 +214,17 @@ export default class DiaryAnalyzerPlugin extends Plugin {
 				};
 
 				report += '\n## 统计图表\n\n';
-				// 这里需要实现图表的导出和嵌入
+				
+				// 导出并嵌入图表
+				for (const [name, chart] of Object.entries(charts)) {
+					const imageData = await this.chartService.exportChart(chart);
+					report += `### ${name}\n\n`;
+					report += `![${name}](${imageData})\n\n`;
+				}
 			}
 
-			// 保存报告
+			// 保存报告 增加当前操作日期
+			
 			const reportPath = `${this.settings.diaryFolder}/分析报告.md`;
 			await this.app.vault.create(reportPath, report);
 			new Notice('分析报告已导出');
@@ -370,10 +380,97 @@ class AnalysisReportModal extends Modal {
 		statsContainer.createEl('p', { text: `总日记数：${stats.totalEntries}` });
 		statsContainer.createEl('p', { text: `平均心情指数：${stats.averageMood}` });
 
-		// 显示图表（这里需要实现图表的渲染）
+		// 显示图表
 		const chartsContainer = contentEl.createDiv();
 		chartsContainer.createEl('h3', { text: '统计图表' });
-		// TODO: 实现图表渲染
+
+		// 创建图表容器
+		const moodTrendContainer = chartsContainer.createDiv();
+		const wordCloudContainer = chartsContainer.createDiv();
+		const activityStatsContainer = chartsContainer.createDiv();
+		const moodDistContainer = chartsContainer.createDiv();
+
+		// 设置容器样式
+		moodTrendContainer.style.height = '300px';
+		wordCloudContainer.style.height = '300px';
+		activityStatsContainer.style.height = '300px';
+		moodDistContainer.style.height = '300px';
+
+		// 渲染心情趋势图
+		const moodTrendCanvas = moodTrendContainer.createEl('canvas');
+		new Chart(moodTrendCanvas, {
+			type: 'line',
+			data: this.charts.moodTrend.data,
+			options: this.charts.moodTrend.options
+		});
+
+		// 渲染词云图
+		const wordCloudCanvas = wordCloudContainer.createEl('canvas');
+		this.renderWordCloud(wordCloudCanvas, this.charts.wordCloud.data);
+
+		// 渲染活动统计图
+		const activityStatsCanvas = activityStatsContainer.createEl('canvas');
+		new Chart(activityStatsCanvas, {
+			type: 'bar',
+			data: this.charts.activityStats.data,
+			options: this.charts.activityStats.options
+		});
+
+		// 渲染心情分布图
+		const moodDistCanvas = moodDistContainer.createEl('canvas');
+		new Chart(moodDistCanvas, {
+			type: 'doughnut',
+			data: this.charts.moodDistribution.data,
+			options: this.charts.moodDistribution.options
+		});
+	}
+
+	private renderWordCloud(canvas: HTMLCanvasElement, words: Array<{text: string; value: number; color: string}>) {
+		const width = canvas.parentElement?.clientWidth || 800;
+		const height = canvas.parentElement?.clientHeight || 400;
+
+		interface CloudWord {
+			text: string;
+			size: number;
+			color: string;
+			x?: number;
+			y?: number;
+			rotate?: number;
+		}
+
+		const layout = cloud<CloudWord>()
+			.size([width, height])
+			.words(words.map(d => ({
+				text: d.text,
+				size: Math.sqrt(d.value) * 10,
+				color: d.color
+			})))
+			.padding(5)
+			.rotate(() => (~~(Math.random() * 6) - 3) * 30)
+			.font("Impact")
+			.fontSize(d => d.size || 0)
+			.on("end", draw);
+
+		layout.start();
+
+		function draw(words: CloudWord[]) {
+			d3.select(canvas.parentElement)
+				.append("svg")
+				.attr("width", layout.size()[0])
+				.attr("height", layout.size()[1])
+				.append("g")
+				.attr("transform", `translate(${layout.size()[0] / 2},${layout.size()[1] / 2})`)
+				.selectAll("text")
+				.data(words)
+				.enter()
+				.append("text")
+				.style("font-size", d => `${d.size}px`)
+				.style("font-family", "Impact")
+				.style("fill", d => d.color)
+				.attr("text-anchor", "middle")
+				.attr("transform", d => `translate(${d.x || 0},${d.y || 0})rotate(${d.rotate || 0})`)
+				.text(d => d.text);
+		}
 	}
 
 	private calculateAverageMood(): number {
